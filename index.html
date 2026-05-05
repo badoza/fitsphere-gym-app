@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitSphere - Gym & Management App</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel (Translates JSX to JS in the browser) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* Hide scrollbar for clean UI */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-200">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- MOCK DATA ---
+        const INITIAL_CLASSES = [
+            { id: 1, name: 'HIIT Burn', time: '06:00 AM', duration: '50 Min', spots: 5, totalSpots: 30, instructor: 'Alex M.', type: 'Cardio', color: 'bg-orange-500' },
+            { id: 2, name: 'Power Lifting', time: '07:00 AM', duration: '60 Min', spots: 0, totalSpots: 20, instructor: 'Sarah J.', type: 'Strength', color: 'bg-purple-500' },
+            { id: 3, name: 'Vinyasa Yoga', time: '08:30 AM', duration: '45 Min', spots: 12, totalSpots: 40, instructor: 'Elena R.', type: 'Flexibility', color: 'bg-teal-500' },
+            { id: 4, name: 'Core Crusher', time: '05:30 PM', duration: '45 Min', spots: 8, totalSpots: 25, instructor: 'Mike T.', type: 'Strength', color: 'bg-red-500' },
+            { id: 5, name: 'Zumba Fiesta', time: '07:00 PM', duration: '60 Min', spots: 15, totalSpots: 50, instructor: 'Maria G.', type: 'Dance', color: 'bg-pink-500' },
+        ];
+
+        const MOCK_MEMBERS = [
+            { id: 'M001', name: 'John Doe', plan: 'Pro Annual', expiry: '2026-12-01', status: 'Active', visits: 142 },
+            { id: 'M002', name: 'Jane Smith', plan: 'Basic Monthly', expiry: '2026-05-10', status: 'Expiring Soon', visits: 12 },
+            { id: 'M003', name: 'Robert Chen', plan: 'Elite 6-Month', expiry: '2026-08-15', status: 'Active', visits: 67 },
+            { id: 'M004', name: 'Emily Davis', plan: 'Pro Annual', expiry: '2026-01-20', status: 'Expired', visits: 230 },
+        ];
+
+        function App() {
+            const [viewRole, setViewRole] = useState('user'); // 'user' | 'admin'
+            
+            // App State
+            const [activeTab, setActiveTab] = useState('home');
+            const [classes, setClasses] = useState(INITIAL_CLASSES);
+            const [bookedClasses, setBookedClasses] = useState([1]); 
+            
+            // AI Chat State
+            const [chatMessages, setChatMessages] = useState([
+                { role: 'ai', text: 'Hey there! I am your FitSphere AI coach. How can we crush your goals today?' }
+            ]);
+            const [chatInput, setChatInput] = useState('');
+
+            // Handlers
+            const handleBookClass = (classId) => {
+                if (bookedClasses.includes(classId)) {
+                    setBookedClasses(bookedClasses.filter(id => id !== classId));
+                    setClasses(classes.map(c => c.id === classId ? { ...c, spots: c.spots + 1 } : c));
+                } else {
+                    const targetClass = classes.find(c => c.id === classId);
+                    if (targetClass.spots > 0) {
+                        setBookedClasses([...bookedClasses, classId]);
+                        setClasses(classes.map(c => c.id === classId ? { ...c, spots: c.spots - 1 } : c));
+                    }
+                }
+            };
+
+            const handleSendMessage = (e) => {
+                e.preventDefault();
+                if (!chatInput.trim()) return;
+                
+                setChatMessages([...chatMessages, { role: 'user', text: chatInput }]);
+                const userInput = chatInput;
+                setChatInput('');
+
+                setTimeout(() => {
+                    let aiResponse = "Keep pushing! Make sure to hydrate.";
+                    if (userInput.toLowerCase().includes('diet')) aiResponse = "For muscle gain, aim for 1.6g of protein per kg of body weight. Try adding chicken, tofu, or greek yogurt!";
+                    if (userInput.toLowerCase().includes('sore')) aiResponse = "Muscle soreness is normal! Focus on active recovery today: light walking, stretching, and plenty of water.";
+                    
+                    setChatMessages(prev => [...prev, { role: 'ai', text: aiResponse }]);
+                }, 1000);
+            };
+
+            // ================= USER MOBILE COMPONENTS =================
+            const UserHome = () => (
+                <div className="p-6 space-y-6 pb-24 h-full overflow-y-auto bg-gray-50">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">Hi, Alex! 👋</h1>
+                            <p className="text-sm text-gray-500">Ready to sweat today?</p>
+                        </div>
+                        <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center border-2 border-indigo-500 overflow-hidden">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" alt="avatar" />
+                        </div>
+                    </div>
+
+                    <div className="bg-gradient-to-r from-gray-900 to-indigo-900 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white opacity-5"></div>
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <p className="text-indigo-200 text-sm font-medium tracking-wider uppercase mb-1">Membership</p>
+                                <h2 className="text-2xl font-bold">Pro Elite</h2>
+                            </div>
+                            <div className="bg-indigo-500/30 px-3 py-1 rounded-full border border-indigo-400/30">
+                                <span className="text-xs font-semibold">184 Days Left</span>
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-4 mb-2">
+                            <div className="text-center">
+                                <p className="text-3xl font-bold">12</p>
+                                <p className="text-xs text-indigo-200">Workouts</p>
+                            </div>
+                            <div className="text-center border-l border-r border-indigo-700">
+                                <p className="text-3xl font-bold">3</p>
+                                <p className="text-xs text-indigo-200">Streak</p>
+                            </div>
+                            <div className="text-center flex flex-col items-center justify-center">
+                                <button onClick={() => setActiveTab('qr')} className="bg-white text-indigo-900 w-10 h-10 rounded-full hover:scale-105 transition shadow-lg flex items-center justify-center">
+                                    <i className="fas fa-qrcode"></i>
+                                </button>
+                                <p className="text-[10px] mt-1 text-indigo-200">Check-in</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="font-semibold text-gray-900 mb-3">Quick Actions</h3>
+                        <div className="grid grid-cols-4 gap-3">
+                            {[
+                                { icon: 'fa-dumbbell', label: 'Workouts', color: 'text-orange-500', bg: 'bg-orange-100' },
+                                { icon: 'fa-tint', label: 'Diet Plan', color: 'text-blue-500', bg: 'bg-blue-100' },
+                                { icon: 'fa-heartbeat', label: 'Body Stats', color: 'text-purple-500', bg: 'bg-purple-100' },
+                                { icon: 'fa-play', label: 'Live Video', color: 'text-red-500', bg: 'bg-red-100' },
+                            ].map((action, idx) => (
+                                <div key={idx} className="flex flex-col items-center gap-2">
+                                    <div className={`h-14 w-14 rounded-2xl ${action.bg} flex items-center justify-center cursor-pointer hover:scale-105 transition`}>
+                                        <i className={`fas ${action.icon} ${action.color} text-xl`}></i>
+                                    </div>
+                                    <span className="text-xs font-medium text-gray-600">{action.label}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {bookedClasses.length > 0 && (
+                        <div>
+                            <h3 className="font-semibold text-gray-900 mb-3">Upcoming Today</h3>
+                            {bookedClasses.map(id => {
+                                const cls = classes.find(c => c.id === id);
+                                return (
+                                    <div key={id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`${cls.color} h-12 w-12 rounded-xl flex items-center justify-center text-white`}>
+                                                <i className="fas fa-clock text-xl"></i>
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-gray-900">{cls.name}</h4>
+                                                <p className="text-sm text-gray-500">{cls.time} • {cls.duration}</p>
+                                            </div>
+                                        </div>
+                                        <button className="text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full text-sm font-semibold">
+                                            View
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            );
+
+            const UserClasses = () => (
+                <div className="h-full flex flex-col bg-gray-50 pb-20">
+                    <div className="p-6 pb-2 bg-white shadow-sm z-10">
+                        <h1 className="text-2xl font-bold text-gray-900 mb-4">Book a Class</h1>
+                        <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+                            {['Today', 'Tomorrow', 'Wed 12', 'Thu 13', 'Fri 14'].map((day, idx) => (
+                                <div key={idx} className={`min-w-[80px] py-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition ${idx === 0 ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}>
+                                    <span className={`text-xs ${idx === 0 ? 'text-indigo-200' : 'text-gray-400'}`}>May</span>
+                                    <span className="font-bold">{day.includes(' ') ? day.split(' ')[1] : (idx === 0 ? '10' : '11')}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {classes.map((cls) => {
+                            const isBooked = bookedClasses.includes(cls.id);
+                            const isFull = cls.spots === 0 && !isBooked;
+
+                            return (
+                                <div key={cls.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden group">
+                                    <div className={`absolute top-0 left-0 w-1.5 h-full ${cls.color}`}></div>
+                                    <div className="flex justify-between items-start mb-3 pl-2">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-xs font-bold tracking-wider uppercase text-gray-400">{cls.type}</span>
+                                                {cls.spots <= 5 && cls.spots > 0 && !isBooked && (
+                                                    <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-sm">Fast Filling</span>
+                                                )}
+                                            </div>
+                                            <h3 className="text-xl font-bold text-gray-900">{cls.name}</h3>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-lg font-bold text-indigo-600">{cls.time}</p>
+                                            <p className="text-xs text-gray-500">{cls.duration}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 mb-4 pl-2">
+                                        <div className="h-6 w-6 rounded-full bg-gray-200 overflow-hidden">
+                                            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${cls.instructor}`} alt={cls.instructor} />
+                                        </div>
+                                        <span className="text-sm text-gray-600 font-medium">{cls.instructor}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center pl-2 pt-4 border-t border-gray-50">
+                                        <div className="flex items-center gap-1.5">
+                                            <i className={`fas fa-users ${isFull ? 'text-red-400' : 'text-gray-400'}`}></i>
+                                            <span className={`text-sm font-medium ${isFull ? 'text-red-500' : 'text-gray-600'}`}>
+                                                {isBooked ? 'Booked' : `${cls.spots} spots left`}
+                                            </span>
+                                        </div>
+                                        <button 
+                                            onClick={() => handleBookClass(cls.id)}
+                                            disabled={isFull}
+                                            className={`px-6 py-2 rounded-xl font-semibold transition ${
+                                                isBooked ? 'bg-gray-900 text-white' : 
+                                                isFull ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 
+                                                'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200'
+                                            }`}
+                                        >
+                                            {isBooked ? 'Cancel' : isFull ? 'Waitlist' : 'Book Now'}
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+
+            const UserAICoach = () => (
+                <div className="h-full flex flex-col bg-gray-50 pb-20">
+                    <div className="p-4 bg-white shadow-sm flex items-center gap-3 z-10 border-b border-gray-100">
+                        <div className="h-10 w-10 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white shadow-md">
+                            <i className="fas fa-bolt"></i>
+                        </div>
+                        <div>
+                            <h2 className="font-bold text-gray-900 text-lg">FitSphere AI</h2>
+                            <p className="text-xs text-indigo-600 font-medium flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block"></span> Online
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {chatMessages.map((msg, idx) => (
+                            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-[80%] rounded-2xl p-3 ${
+                                    msg.role === 'user' 
+                                        ? 'bg-indigo-600 text-white rounded-tr-sm' 
+                                        : 'bg-white text-gray-800 shadow-sm border border-gray-100 rounded-tl-sm'
+                                }`}>
+                                    <p className="text-sm leading-relaxed">{msg.text}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="p-4 bg-white border-t border-gray-100">
+                        <form onSubmit={handleSendMessage} className="flex gap-2 relative">
+                            <input 
+                                type="text" 
+                                value={chatInput}
+                                onChange={(e) => setChatInput(e.target.value)}
+                                placeholder="Ask about diet, forms..." 
+                                className="flex-1 bg-gray-100 rounded-full px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                            />
+                            <button type="submit" className="h-11 w-11 bg-indigo-600 text-white rounded-full flex items-center justify-center hover:bg-indigo-700 transition">
+                                <i className="fas fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+
+            const UserQR = () => (
+                <div className="h-full flex flex-col items-center justify-center bg-gray-900 p-6 pb-20 text-white">
+                    <h2 className="text-2xl font-bold mb-2">Gym Access</h2>
+                    <p className="text-gray-400 mb-8 text-center max-w-[250px]">Scan this QR code at the turnstile to enter the facility.</p>
+                    
+                    <div className="bg-white p-6 rounded-3xl shadow-2xl relative">
+                        <div className="w-48 h-48 bg-white border-8 border-white grid grid-cols-6 grid-rows-6 gap-1 relative z-10">
+                            {[...Array(36)].map((_, i) => (
+                                <div key={i} className={`${Math.random() > 0.4 ? 'bg-black' : 'bg-white'} rounded-sm`}></div>
+                            ))}
+                            <div className="absolute top-0 left-0 w-12 h-12 border-4 border-black bg-white"><div className="w-4 h-4 bg-black m-2"></div></div>
+                            <div className="absolute top-0 right-0 w-12 h-12 border-4 border-black bg-white"><div className="w-4 h-4 bg-black m-2"></div></div>
+                            <div className="absolute bottom-0 left-0 w-12 h-12 border-4 border-black bg-white"><div className="w-4 h-4 bg-black m-2"></div></div>
+                        </div>
+                    </div>
+
+                    <div className="mt-12 w-full max-w-sm bg-gray-800 rounded-2xl p-4 flex items-center justify-between border border-gray-700">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center">
+                                <i className="fas fa-check-circle text-xl"></i>
+                            </div>
+                            <div>
+                                <p className="font-semibold">Pro Elite</p>
+                                <p className="text-xs text-gray-400">Valid until Dec 2026</p>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-xl font-bold">A-142</p>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-widest">ID</p>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // ================= ADMIN DASHBOARD COMPONENTS =================
+            const AdminDashboard = () => (
+                <div className="p-8 space-y-8 animate-in fade-in">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+                            <p className="text-gray-500 mt-1">Overview of your gym's performance today.</p>
+                        </div>
+                        <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 shadow-sm">
+                            <i className="fas fa-calendar"></i> Generate Report
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        {[
+                            { title: 'Total Members', value: '1,248', trend: '+12% this month', icon: 'fa-users', color: 'text-blue-600', bg: 'bg-blue-100' },
+                            { title: 'Active Check-ins', value: '142', trend: 'Currently in gym', icon: 'fa-heartbeat', color: 'text-green-600', bg: 'bg-green-100' },
+                            { title: 'Today\'s Revenue', value: '$3,420', trend: '+5% vs yesterday', icon: 'fa-chart-bar', color: 'text-indigo-600', bg: 'bg-indigo-100' },
+                            { title: 'Classes Booked', value: '86', trend: '8 classes today', icon: 'fa-calendar', color: 'text-purple-600', bg: 'bg-purple-100' },
+                        ].map((stat, idx) => (
+                            <div key={idx} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className={`w-12 h-12 flex items-center justify-center rounded-lg ${stat.bg} ${stat.color}`}>
+                                        <i className={`fas ${stat.icon} text-xl`}></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
+                                    <h3 className="text-sm font-medium text-gray-500 mb-2">{stat.title}</h3>
+                                    <p className="text-xs text-gray-400 font-medium">{stat.trend}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                            <h2 className="text-xl font-bold text-gray-900 mb-4">Live Check-ins</h2>
+                            <div className="space-y-4">
+                                {[1, 2, 3, 4].map((_, i) => (
+                                    <div key={i} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition border border-transparent hover:border-gray-100">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-10 w-10 bg-gray-200 rounded-full overflow-hidden">
+                                                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=user${i}`} alt="user" />
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-gray-900">Member {i+1}</p>
+                                                <p className="text-sm text-gray-500">Checked in 5 mins ago</p>
+                                            </div>
+                                        </div>
+                                        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">Active</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                            <h2 className="text-xl font-bold text-gray-900 mb-4">Today's Classes</h2>
+                            <div className="space-y-4">
+                                {INITIAL_CLASSES.slice(0,3).map((cls) => (
+                                    <div key={cls.id} className="border-l-4 border-indigo-500 pl-4 py-1">
+                                        <p className="font-semibold text-gray-900">{cls.name}</p>
+                                        <div className="flex justify-between items-center mt-1">
+                                            <p className="text-sm text-gray-500">{cls.time}</p>
+                                            <p className="text-xs font-medium text-indigo-600">{cls.totalSpots - cls.spots}/{cls.totalSpots} Booked</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <button onClick={() => setActiveTab('admin-classes')} className="w-full mt-6 py-2 border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 rounded-lg transition">Manage Schedule</button>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const AdminMembers = () => (
+                <div className="p-8 space-y-6 animate-in fade-in h-full flex flex-col">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-900">Members</h1>
+                            <p className="text-gray-500 mt-1">Manage user subscriptions and profiles.</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <input type="text" placeholder="Search members..." className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+                            <button className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-lg font-medium transition">
+                                + Add Member
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex-1 overflow-hidden flex flex-col">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 text-sm">
+                                        <th className="p-4 font-medium">ID</th>
+                                        <th className="p-4 font-medium">Name</th>
+                                        <th className="p-4 font-medium">Plan</th>
+                                        <th className="p-4 font-medium">Expiry</th>
+                                        <th className="p-4 font-medium">Visits</th>
+                                        <th className="p-4 font-medium">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {MOCK_MEMBERS.map((member) => (
+                                        <tr key={member.id} className="hover:bg-gray-50 transition">
+                                            <td className="p-4 text-sm font-medium text-gray-900">{member.id}</td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-8 w-8 bg-gray-200 rounded-full hidden sm:block overflow-hidden">
+                                                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${member.name}`} alt={member.name} />
+                                                    </div>
+                                                    <span className="font-medium text-gray-900">{member.name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="p-4 text-sm text-gray-600">{member.plan}</td>
+                                            <td className="p-4 text-sm text-gray-600">{member.expiry}</td>
+                                            <td className="p-4 text-sm text-gray-600">{member.visits}</td>
+                                            <td className="p-4">
+                                                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold
+                                                    ${member.status === 'Active' ? 'bg-green-100 text-green-700' : 
+                                                    member.status === 'Expiring Soon' ? 'bg-yellow-100 text-yellow-700' : 
+                                                    'bg-red-100 text-red-700'}`}>
+                                                    {member.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // ================= MAIN RENDER =================
+            return (
+                <div className="min-h-screen font-sans flex flex-col items-center justify-center p-0 sm:p-4 md:p-8">
+                    
+                    {/* View Switcher Controls */}
+                    <div className="fixed top-4 right-4 z-50 bg-white p-1 rounded-xl shadow-lg flex gap-1 border border-gray-200">
+                        <button 
+                            onClick={() => { setViewRole('user'); setActiveTab('home'); }}
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 ${viewRole === 'user' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                        >
+                            <i className="fas fa-user"></i> User App
+                        </button>
+                        <button 
+                            onClick={() => { setViewRole('admin'); setActiveTab('admin-home'); }}
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 ${viewRole === 'admin' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                        >
+                            <i className="fas fa-shield-alt"></i> Admin Panel
+                        </button>
+                    </div>
+
+                    {/* --- USER MOBILE VIEW --- */}
+                    {viewRole === 'user' && (
+                        <div className="w-full h-screen sm:h-[850px] max-w-[400px] bg-white sm:rounded-[3rem] shadow-2xl relative overflow-hidden flex flex-col sm:border-[8px] border-gray-900">
+                            <div className="flex-1 overflow-hidden relative pt-6">
+                                {activeTab === 'home' && <UserHome />}
+                                {activeTab === 'classes' && <UserClasses />}
+                                {activeTab === 'ai' && <UserAICoach />}
+                                {activeTab === 'qr' && <UserQR />}
+                            </div>
+
+                            {/* Mobile Bottom Nav */}
+                            <div className="absolute bottom-0 w-full bg-white border-t border-gray-100 px-6 py-4 flex justify-between items-center z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+                                {[
+                                    { id: 'home', icon: 'fa-home', label: 'Home' },
+                                    { id: 'classes', icon: 'fa-calendar', label: 'Classes' },
+                                    { id: 'qr', icon: 'fa-qrcode', label: 'Access', special: true },
+                                    { id: 'ai', icon: 'fa-bolt', label: 'Coach' },
+                                    { id: 'profile', icon: 'fa-user', label: 'Profile' },
+                                ].map((tab) => (
+                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className="flex flex-col items-center gap-1 relative">
+                                        {tab.special ? (
+                                            <div className="-mt-8 h-14 w-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-200 border-4 border-white transition hover:scale-105">
+                                                <i className={`fas ${tab.icon} text-xl`}></i>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <i className={`fas ${tab.icon} text-xl ${activeTab === tab.id ? 'text-indigo-600' : 'text-gray-400'} transition-colors duration-300`}></i>
+                                                {activeTab === tab.id && <span className="absolute -bottom-3 w-1 h-1 bg-indigo-600 rounded-full"></span>}
+                                            </>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* --- ADMIN WEB VIEW --- */}
+                    {viewRole === 'admin' && (
+                        <div className="w-full max-w-[1400px] h-[90vh] bg-gray-50 rounded-2xl shadow-2xl flex overflow-hidden border border-gray-200">
+                            {/* Sidebar */}
+                            <div className="w-64 bg-gray-900 text-white flex flex-col hidden md:flex">
+                                <div className="p-6 flex items-center gap-3 border-b border-gray-800">
+                                    <div className="h-8 w-8 bg-indigo-500 rounded-lg flex items-center justify-center">
+                                        <i className="fas fa-dumbbell text-white"></i>
+                                    </div>
+                                    <span className="text-xl font-bold tracking-wide">FitSphere<span className="text-indigo-400">OS</span></span>
+                                </div>
+                                <nav className="flex-1 py-6 px-4 space-y-2">
+                                    {[
+                                        { id: 'admin-home', icon: 'fa-home', label: 'Dashboard' },
+                                        { id: 'admin-members', icon: 'fa-users', label: 'Members' },
+                                        { id: 'admin-classes', icon: 'fa-calendar', label: 'Schedule' },
+                                        { id: 'admin-reports', icon: 'fa-chart-bar', label: 'Reports' },
+                                    ].map(item => (
+                                        <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${activeTab === item.id ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}>
+                                            <i className={`fas ${item.icon} w-5 text-center`}></i>
+                                            <span className="font-medium">{item.label}</span>
+                                        </button>
+                                    ))}
+                                </nav>
+                                <div className="p-4 border-t border-gray-800">
+                                    <div className="flex items-center gap-3 p-3 bg-gray-800 rounded-xl">
+                                        <div className="h-10 w-10 bg-indigo-200 rounded-full overflow-hidden">
+                                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" alt="Admin" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold">Admin Portal</p>
+                                            <p className="text-xs text-gray-400">Manager</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Main Content */}
+                            <div className="flex-1 overflow-y-auto">
+                                {activeTab === 'admin-home' && <AdminDashboard />}
+                                {activeTab === 'admin-members' && <AdminMembers />}
+                                {(activeTab !== 'admin-home' && activeTab !== 'admin-members') && (
+                                    <div className="flex items-center justify-center h-full text-gray-400 flex-col gap-4">
+                                        <i className="fas fa-tools text-5xl opacity-20"></i>
+                                        <p>Module under construction for prototype.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // Render App
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
