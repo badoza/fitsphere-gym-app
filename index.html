@@ -22,6 +22,9 @@
         /* Hide scrollbar for clean UI */
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        /* Smooth transitions */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body class="bg-gray-200">
@@ -30,47 +33,51 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // --- MOCK DATA ---
+        // --- MOCK DATA (Localized to Indian context) ---
         const INITIAL_CLASSES = [
-            { id: 1, name: 'HIIT Burn', time: '06:00 AM', duration: '50 Min', spots: 5, totalSpots: 30, instructor: 'Alex M.', type: 'Cardio', color: 'bg-orange-500' },
-            { id: 2, name: 'Power Lifting', time: '07:00 AM', duration: '60 Min', spots: 0, totalSpots: 20, instructor: 'Sarah J.', type: 'Strength', color: 'bg-purple-500' },
-            { id: 3, name: 'Vinyasa Yoga', time: '08:30 AM', duration: '45 Min', spots: 12, totalSpots: 40, instructor: 'Elena R.', type: 'Flexibility', color: 'bg-teal-500' },
-            { id: 4, name: 'Core Crusher', time: '05:30 PM', duration: '45 Min', spots: 8, totalSpots: 25, instructor: 'Mike T.', type: 'Strength', color: 'bg-red-500' },
-            { id: 5, name: 'Zumba Fiesta', time: '07:00 PM', duration: '60 Min', spots: 15, totalSpots: 50, instructor: 'Maria G.', type: 'Dance', color: 'bg-pink-500' },
+            { id: 1, name: 'HIIT Burn', time: '06:00 AM', duration: '50 Min', spots: 5, totalSpots: 30, instructor: 'Rahul M.', type: 'Cardio', color: 'bg-orange-500' },
+            { id: 2, name: 'Power Lifting', time: '07:00 AM', duration: '60 Min', spots: 0, totalSpots: 20, instructor: 'Priya S.', type: 'Strength', color: 'bg-purple-500' },
+            { id: 3, name: 'Vinyasa Yoga', time: '08:30 AM', duration: '45 Min', spots: 12, totalSpots: 40, instructor: 'Neha R.', type: 'Flexibility', color: 'bg-teal-500' },
+            { id: 4, name: 'Core Crusher', time: '05:30 PM', duration: '45 Min', spots: 8, totalSpots: 25, instructor: 'Vikram T.', type: 'Strength', color: 'bg-red-500' },
+            { id: 5, name: 'Zumba Fiesta', time: '07:00 PM', duration: '60 Min', spots: 15, totalSpots: 50, instructor: 'Anjali G.', type: 'Dance', color: 'bg-pink-500' },
         ];
 
         const MOCK_MEMBERS = [
-            { id: 'M001', name: 'John Doe', plan: 'Pro Annual', expiry: '2026-12-01', status: 'Active', visits: 142 },
-            { id: 'M002', name: 'Jane Smith', plan: 'Basic Monthly', expiry: '2026-05-10', status: 'Expiring Soon', visits: 12 },
-            { id: 'M003', name: 'Robert Chen', plan: 'Elite 6-Month', expiry: '2026-08-15', status: 'Active', visits: 67 },
-            { id: 'M004', name: 'Emily Davis', plan: 'Pro Annual', expiry: '2026-01-20', status: 'Expired', visits: 230 },
+            { id: 'M001', name: 'Amit Kumar', plan: 'Pro Annual', expiry: '2026-12-01', status: 'Active', visits: 142 },
+            { id: 'M002', name: 'Sneha Sharma', plan: 'Basic Monthly', expiry: '2026-05-10', status: 'Expiring Soon', visits: 12 },
+            { id: 'M003', name: 'Rohan Patel', plan: 'Elite 6-Month', expiry: '2026-08-15', status: 'Active', visits: 67 },
+            { id: 'M004', name: 'Kavya Singh', plan: 'Pro Annual', expiry: '2026-01-20', status: 'Expired', visits: 230 },
         ];
 
         function App() {
             const [viewRole, setViewRole] = useState('user'); // 'user' | 'admin'
             
             // App State
+            const [isAuthenticated, setIsAuthenticated] = useState(false); // Authentication state
             const [activeTab, setActiveTab] = useState('home');
             const [classes, setClasses] = useState(INITIAL_CLASSES);
             const [bookedClasses, setBookedClasses] = useState([1]); 
+            const [showPaymentModal, setShowPaymentModal] = useState(false);
             
             // AI Chat State
             const [chatMessages, setChatMessages] = useState([
-                { role: 'ai', text: 'Hey there! I am your FitSphere AI coach. How can we crush your goals today?' }
+                { role: 'ai', text: 'Namaste! I am your FitSphere AI coach. How can we crush your goals today?' }
             ]);
             const [chatInput, setChatInput] = useState('');
 
             // Handlers
             const handleBookClass = (classId) => {
-                if (bookedClasses.includes(classId)) {
-                    setBookedClasses(bookedClasses.filter(id => id !== classId));
-                    setClasses(classes.map(c => c.id === classId ? { ...c, spots: c.spots + 1 } : c));
-                } else {
-                    const targetClass = classes.find(c => c.id === classId);
-                    if (targetClass.spots > 0) {
-                        setBookedClasses([...bookedClasses, classId]);
-                        setClasses(classes.map(c => c.id === classId ? { ...c, spots: c.spots - 1 } : c));
-                    }
+                const isCurrentlyBooked = bookedClasses.includes(classId);
+                const targetClass = classes.find(c => c.id === classId);
+
+                if (isCurrentlyBooked) {
+                    // Cancel Booking
+                    setBookedClasses(prev => prev.filter(id => id !== classId));
+                    setClasses(prev => prev.map(c => c.id === classId ? { ...c, spots: c.spots + 1 } : c));
+                } else if (targetClass && targetClass.spots > 0) {
+                    // Book Class
+                    setBookedClasses(prev => [...prev, classId]);
+                    setClasses(prev => prev.map(c => c.id === classId ? { ...c, spots: c.spots - 1 } : c));
                 }
             };
 
@@ -83,45 +90,217 @@
                 setChatInput('');
 
                 setTimeout(() => {
-                    let aiResponse = "Keep pushing! Make sure to hydrate.";
-                    if (userInput.toLowerCase().includes('diet')) aiResponse = "For muscle gain, aim for 1.6g of protein per kg of body weight. Try adding chicken, tofu, or greek yogurt!";
-                    if (userInput.toLowerCase().includes('sore')) aiResponse = "Muscle soreness is normal! Focus on active recovery today: light walking, stretching, and plenty of water.";
+                    let aiResponse = "Keep pushing! Make sure to stay hydrated during your workout.";
+                    if (userInput.toLowerCase().includes('diet')) aiResponse = "For muscle gain, aim for high protein. Try adding paneer, dal, soya chunks, or chicken to your daily meals!";
+                    if (userInput.toLowerCase().includes('sore')) aiResponse = "Muscle soreness is completely normal! Focus on active recovery today: light yoga, stretching, and plenty of water.";
                     
                     setChatMessages(prev => [...prev, { role: 'ai', text: aiResponse }]);
                 }, 1000);
             };
 
+            // ================= LOGIN & REGISTRATION COMPONENT =================
+            const LoginScreen = () => {
+                const [loginStep, setLoginStep] = useState('phone'); // phone, otp
+                const [phoneNumber, setPhoneNumber] = useState('');
+
+                return (
+                    <div className="h-full w-full bg-gray-900 flex flex-col items-center justify-center p-6 text-white fade-in relative overflow-hidden">
+                        {/* Background Design */}
+                        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-indigo-600 opacity-20 blur-3xl"></div>
+                        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 rounded-full bg-pink-600 opacity-20 blur-3xl"></div>
+                        
+                        <div className="z-10 w-full max-w-sm">
+                            <div className="text-center mb-10">
+                                <div className="w-20 h-20 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/50">
+                                    <i className="fas fa-dumbbell text-4xl text-white"></i>
+                                </div>
+                                <h1 className="text-3xl font-bold tracking-wide">FitSphere</h1>
+                                <p className="text-gray-400 mt-2 text-sm">Your fitness journey begins here</p>
+                            </div>
+
+                            {loginStep === 'phone' ? (
+                                <div className="space-y-5 fade-in">
+                                    <div>
+                                        <label className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2 block">Mobile Number</label>
+                                        <div className="flex bg-gray-800 rounded-xl border border-gray-700 overflow-hidden focus-within:border-indigo-500 transition">
+                                            <span className="px-4 py-3 bg-gray-800 text-gray-400 border-r border-gray-700 font-medium">+91</span>
+                                            <input 
+                                                type="tel" 
+                                                className="flex-1 bg-transparent px-4 py-3 text-white outline-none w-full" 
+                                                placeholder="Enter 10-digit number"
+                                                value={phoneNumber}
+                                                onChange={(e) => setPhoneNumber(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setLoginStep('otp')} 
+                                        className="w-full bg-indigo-600 hover:bg-indigo-700 py-3.5 rounded-xl font-bold transition shadow-lg shadow-indigo-600/30"
+                                    >
+                                        Get OTP
+                                    </button>
+
+                                    <div className="relative flex items-center py-4">
+                                        <div className="flex-grow border-t border-gray-700"></div>
+                                        <span className="flex-shrink-0 mx-4 text-gray-500 text-xs uppercase tracking-wider">Or</span>
+                                        <div className="flex-grow border-t border-gray-700"></div>
+                                    </div>
+
+                                    <button 
+                                        onClick={() => setIsAuthenticated(true)} 
+                                        className="w-full bg-white text-gray-900 hover:bg-gray-100 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3"
+                                    >
+                                        <img src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png" alt="Google" className="w-5 h-5" />
+                                        Continue with Google
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="space-y-5 fade-in text-center">
+                                    <p className="text-sm text-gray-400 mb-6">We've sent a 4-digit code to<br/><strong className="text-white">+91 {phoneNumber || '9876543210'}</strong></p>
+                                    
+                                    <div className="flex gap-3 justify-center mb-6">
+                                        {[1, 2, 3, 4].map(i => (
+                                            <input 
+                                                key={i} 
+                                                type="text" 
+                                                maxLength="1" 
+                                                className="w-14 h-14 bg-gray-800 border border-gray-700 rounded-xl text-center text-2xl font-bold text-white outline-none focus:border-indigo-500 focus:bg-gray-700 transition" 
+                                            />
+                                        ))}
+                                    </div>
+
+                                    <button 
+                                        onClick={() => setIsAuthenticated(true)} 
+                                        className="w-full bg-indigo-600 hover:bg-indigo-700 py-3.5 rounded-xl font-bold transition shadow-lg shadow-indigo-600/30"
+                                    >
+                                        Verify & Login
+                                    </button>
+                                    
+                                    <button 
+                                        onClick={() => setLoginStep('phone')} 
+                                        className="text-gray-400 hover:text-white text-sm mt-4 inline-block"
+                                    >
+                                        <i className="fas fa-arrow-left mr-1"></i> Change Number
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
+            // ================= PAYMENT MODAL COMPONENT =================
+            const PaymentModal = () => {
+                const [payStep, setPayStep] = useState('select'); // select, processing, success
+
+                return (
+                    <div className="fixed inset-0 bg-black/60 z-[100] flex items-end sm:items-center justify-center sm:p-4 backdrop-blur-sm fade-in">
+                        <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md overflow-hidden shadow-2xl">
+                            {payStep === 'select' && (
+                                <div className="p-6">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h3 className="text-xl font-bold text-gray-900">Choose Membership</h3>
+                                        <button onClick={() => setShowPaymentModal(false)} className="text-gray-400 hover:text-gray-600 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                                            <i className="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <div className="space-y-4 mb-8">
+                                        {/* Recommended Plan */}
+                                        <div className="border-2 border-indigo-600 bg-indigo-50 rounded-2xl p-4 cursor-pointer relative shadow-sm">
+                                            <div className="absolute -top-3 right-4 bg-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">Most Popular</div>
+                                            <div className="flex justify-between items-center">
+                                                <div>
+                                                    <h4 className="font-bold text-gray-900 text-lg">Pro Elite</h4>
+                                                    <p className="text-xs text-indigo-600 font-semibold mt-0.5">6 Months Access</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <h4 className="font-bold text-indigo-600 text-xl">₹14,999</h4>
+                                                    <p className="text-xs text-gray-400 line-through">₹18,000</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {/* Basic Plan */}
+                                        <div className="border border-gray-200 rounded-2xl p-4 cursor-pointer hover:border-indigo-300 transition">
+                                            <div className="flex justify-between items-center">
+                                                <div>
+                                                    <h4 className="font-bold text-gray-900">Basic Flex</h4>
+                                                    <p className="text-xs text-gray-500 mt-0.5">1 Month Access</p>
+                                                </div>
+                                                <h4 className="font-bold text-gray-900 text-lg">₹2,999</h4>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <p className="text-xs text-gray-400 text-center mb-3"><i className="fas fa-lock mr-1"></i> Secured by FitSphere Payments</p>
+                                    <button 
+                                        onClick={() => { setPayStep('processing'); setTimeout(() => setPayStep('success'), 2500); }} 
+                                        className="w-full bg-gray-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-800 transition shadow-lg"
+                                    >
+                                        Pay via UPI / Card <i className="fas fa-arrow-right"></i>
+                                    </button>
+                                </div>
+                            )}
+
+                            {payStep === 'processing' && (
+                                <div className="p-12 text-center flex flex-col items-center">
+                                    <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-6"></div>
+                                    <h3 className="text-lg font-bold text-gray-900">Processing Payment...</h3>
+                                    <p className="text-sm text-gray-500 mt-2">Connecting to secure gateway. Please don't close this screen.</p>
+                                </div>
+                            )}
+
+                            {payStep === 'success' && (
+                                <div className="p-10 text-center flex flex-col items-center fade-in">
+                                    <div className="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center text-4xl mb-6 shadow-inner">
+                                        <i className="fas fa-check"></i>
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-gray-900">Payment Successful!</h3>
+                                    <p className="text-sm text-gray-500 mt-2 mb-8">Your membership has been instantly activated. Time to sweat!</p>
+                                    <button 
+                                        onClick={() => setShowPaymentModal(false)} 
+                                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-xl font-bold transition shadow-lg shadow-indigo-600/30"
+                                    >
+                                        Let's Go
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
             // ================= USER MOBILE COMPONENTS =================
             const UserHome = () => (
-                <div className="p-6 space-y-6 pb-24 h-full overflow-y-auto bg-gray-50">
+                <div className="p-6 space-y-6 pb-24 h-full overflow-y-auto bg-gray-50 fade-in">
                     <div className="flex justify-between items-center">
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900">Hi, Alex! 👋</h1>
+                            <h1 className="text-2xl font-bold text-gray-900">Hi, Rahul! 👋</h1>
                             <p className="text-sm text-gray-500">Ready to sweat today?</p>
                         </div>
                         <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center border-2 border-indigo-500 overflow-hidden">
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" alt="avatar" />
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul" alt="avatar" />
                         </div>
                     </div>
 
                     <div className="bg-gradient-to-r from-gray-900 to-indigo-900 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
                         <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white opacity-5"></div>
-                        <div className="flex justify-between items-start mb-6">
+                        <div className="flex justify-between items-start mb-6 relative z-10">
                             <div>
                                 <p className="text-indigo-200 text-sm font-medium tracking-wider uppercase mb-1">Membership</p>
                                 <h2 className="text-2xl font-bold">Pro Elite</h2>
                             </div>
-                            <div className="bg-indigo-500/30 px-3 py-1 rounded-full border border-indigo-400/30">
-                                <span className="text-xs font-semibold">184 Days Left</span>
-                            </div>
+                            <button onClick={() => setShowPaymentModal(true)} className="bg-indigo-500/40 hover:bg-indigo-500/60 px-3 py-1.5 rounded-full border border-indigo-400/50 transition flex items-center gap-1 cursor-pointer backdrop-blur-sm">
+                                <i className="fas fa-bolt text-[10px] text-yellow-400"></i>
+                                <span className="text-xs font-semibold">Renew Plan</span>
+                            </button>
                         </div>
                         
-                        <div className="grid grid-cols-3 gap-4 mb-2">
+                        <div className="grid grid-cols-3 gap-4 mb-2 relative z-10">
                             <div className="text-center">
                                 <p className="text-3xl font-bold">12</p>
                                 <p className="text-xs text-indigo-200">Workouts</p>
                             </div>
-                            <div className="text-center border-l border-r border-indigo-700">
+                            <div className="text-center border-l border-r border-indigo-700/50">
                                 <p className="text-3xl font-bold">3</p>
                                 <p className="text-xs text-indigo-200">Streak</p>
                             </div>
@@ -129,7 +308,7 @@
                                 <button onClick={() => setActiveTab('qr')} className="bg-white text-indigo-900 w-10 h-10 rounded-full hover:scale-105 transition shadow-lg flex items-center justify-center">
                                     <i className="fas fa-qrcode"></i>
                                 </button>
-                                <p className="text-[10px] mt-1 text-indigo-200">Check-in</p>
+                                <p className="text-[10px] mt-1 text-indigo-200 font-medium">Check-in</p>
                             </div>
                         </div>
                     </div>
@@ -158,10 +337,11 @@
                             <h3 className="font-semibold text-gray-900 mb-3">Upcoming Today</h3>
                             {bookedClasses.map(id => {
                                 const cls = classes.find(c => c.id === id);
+                                if(!cls) return null;
                                 return (
-                                    <div key={id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-between mb-3">
+                                    <div key={id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-between mb-3 fade-in">
                                         <div className="flex items-center gap-4">
-                                            <div className={`${cls.color} h-12 w-12 rounded-xl flex items-center justify-center text-white`}>
+                                            <div className={`${cls.color} h-12 w-12 rounded-xl flex items-center justify-center text-white shadow-md`}>
                                                 <i className="fas fa-clock text-xl"></i>
                                             </div>
                                             <div>
@@ -169,9 +349,9 @@
                                                 <p className="text-sm text-gray-500">{cls.time} • {cls.duration}</p>
                                             </div>
                                         </div>
-                                        <button className="text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full text-sm font-semibold">
-                                            View
-                                        </button>
+                                        <span className="text-green-600 bg-green-50 px-3 py-1 rounded-full text-xs font-bold border border-green-100">
+                                            Booked ✓
+                                        </span>
                                     </div>
                                 );
                             })}
@@ -181,12 +361,12 @@
             );
 
             const UserClasses = () => (
-                <div className="h-full flex flex-col bg-gray-50 pb-20">
+                <div className="h-full flex flex-col bg-gray-50 pb-20 fade-in">
                     <div className="p-6 pb-2 bg-white shadow-sm z-10">
                         <h1 className="text-2xl font-bold text-gray-900 mb-4">Book a Class</h1>
                         <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
                             {['Today', 'Tomorrow', 'Wed 12', 'Thu 13', 'Fri 14'].map((day, idx) => (
-                                <div key={idx} className={`min-w-[80px] py-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition ${idx === 0 ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}>
+                                <div key={idx} className={`min-w-[80px] py-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition ${idx === 0 ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                                     <span className={`text-xs ${idx === 0 ? 'text-indigo-200' : 'text-gray-400'}`}>May</span>
                                     <span className="font-bold">{day.includes(' ') ? day.split(' ')[1] : (idx === 0 ? '10' : '11')}</span>
                                 </div>
@@ -200,7 +380,7 @@
                             const isFull = cls.spots === 0 && !isBooked;
 
                             return (
-                                <div key={cls.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden group">
+                                <div key={cls.id} className={`bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden transition-all ${isBooked ? 'ring-2 ring-indigo-500' : ''}`}>
                                     <div className={`absolute top-0 left-0 w-1.5 h-full ${cls.color}`}></div>
                                     <div className="flex justify-between items-start mb-3 pl-2">
                                         <div>
@@ -227,16 +407,16 @@
                                         <div className="flex items-center gap-1.5">
                                             <i className={`fas fa-users ${isFull ? 'text-red-400' : 'text-gray-400'}`}></i>
                                             <span className={`text-sm font-medium ${isFull ? 'text-red-500' : 'text-gray-600'}`}>
-                                                {isBooked ? 'Booked' : `${cls.spots} spots left`}
+                                                {isBooked ? 'Spot Confirmed' : `${cls.spots} spots left`}
                                             </span>
                                         </div>
                                         <button 
                                             onClick={() => handleBookClass(cls.id)}
                                             disabled={isFull}
                                             className={`px-6 py-2 rounded-xl font-semibold transition ${
-                                                isBooked ? 'bg-gray-900 text-white' : 
+                                                isBooked ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 
                                                 isFull ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 
-                                                'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200'
+                                                'bg-gray-900 text-white hover:bg-indigo-600 shadow-md shadow-gray-300'
                                             }`}
                                         >
                                             {isBooked ? 'Cancel' : isFull ? 'Waitlist' : 'Book Now'}
@@ -250,7 +430,7 @@
             );
 
             const UserAICoach = () => (
-                <div className="h-full flex flex-col bg-gray-50 pb-20">
+                <div className="h-full flex flex-col bg-gray-50 pb-20 fade-in">
                     <div className="p-4 bg-white shadow-sm flex items-center gap-3 z-10 border-b border-gray-100">
                         <div className="h-10 w-10 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white shadow-md">
                             <i className="fas fa-bolt"></i>
@@ -264,7 +444,7 @@
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
                         {chatMessages.map((msg, idx) => (
-                            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} fade-in`}>
                                 <div className={`max-w-[80%] rounded-2xl p-3 ${
                                     msg.role === 'user' 
                                         ? 'bg-indigo-600 text-white rounded-tr-sm' 
@@ -293,7 +473,7 @@
             );
 
             const UserQR = () => (
-                <div className="h-full flex flex-col items-center justify-center bg-gray-900 p-6 pb-20 text-white">
+                <div className="h-full flex flex-col items-center justify-center bg-gray-900 p-6 pb-20 text-white fade-in">
                     <h2 className="text-2xl font-bold mb-2">Gym Access</h2>
                     <p className="text-gray-400 mb-8 text-center max-w-[250px]">Scan this QR code at the turnstile to enter the facility.</p>
                     
@@ -328,7 +508,7 @@
 
             // ================= ADMIN DASHBOARD COMPONENTS =================
             const AdminDashboard = () => (
-                <div className="p-8 space-y-8 animate-in fade-in">
+                <div className="p-8 space-y-8 fade-in">
                     <div className="flex justify-between items-center">
                         <div>
                             <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
@@ -343,7 +523,7 @@
                         {[
                             { title: 'Total Members', value: '1,248', trend: '+12% this month', icon: 'fa-users', color: 'text-blue-600', bg: 'bg-blue-100' },
                             { title: 'Active Check-ins', value: '142', trend: 'Currently in gym', icon: 'fa-heartbeat', color: 'text-green-600', bg: 'bg-green-100' },
-                            { title: 'Today\'s Revenue', value: '$3,420', trend: '+5% vs yesterday', icon: 'fa-chart-bar', color: 'text-indigo-600', bg: 'bg-indigo-100' },
+                            { title: 'Today\'s Revenue', value: '₹34,200', trend: '+5% vs yesterday', icon: 'fa-chart-bar', color: 'text-indigo-600', bg: 'bg-indigo-100' },
                             { title: 'Classes Booked', value: '86', trend: '8 classes today', icon: 'fa-calendar', color: 'text-purple-600', bg: 'bg-purple-100' },
                         ].map((stat, idx) => (
                             <div key={idx} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition">
@@ -365,18 +545,18 @@
                         <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                             <h2 className="text-xl font-bold text-gray-900 mb-4">Live Check-ins</h2>
                             <div className="space-y-4">
-                                {[1, 2, 3, 4].map((_, i) => (
+                                {['Amit Kumar', 'Sneha Sharma', 'Rohan Patel', 'Kavya Singh'].map((name, i) => (
                                     <div key={i} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition border border-transparent hover:border-gray-100">
                                         <div className="flex items-center gap-4">
                                             <div className="h-10 w-10 bg-gray-200 rounded-full overflow-hidden">
-                                                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=user${i}`} alt="user" />
+                                                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`} alt={name} />
                                             </div>
                                             <div>
-                                                <p className="font-semibold text-gray-900">Member {i+1}</p>
-                                                <p className="text-sm text-gray-500">Checked in 5 mins ago</p>
+                                                <p className="font-semibold text-gray-900">{name}</p>
+                                                <p className="text-sm text-gray-500">Checked in {i * 5 + 2} mins ago</p>
                                             </div>
                                         </div>
-                                        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">Active</span>
+                                        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold border border-green-200">Active</span>
                                     </div>
                                 ))}
                             </div>
@@ -386,7 +566,7 @@
                             <h2 className="text-xl font-bold text-gray-900 mb-4">Today's Classes</h2>
                             <div className="space-y-4">
                                 {INITIAL_CLASSES.slice(0,3).map((cls) => (
-                                    <div key={cls.id} className="border-l-4 border-indigo-500 pl-4 py-1">
+                                    <div key={cls.id} className={`border-l-4 ${cls.color.replace('bg-', 'border-')} pl-4 py-1`}>
                                         <p className="font-semibold text-gray-900">{cls.name}</p>
                                         <div className="flex justify-between items-center mt-1">
                                             <p className="text-sm text-gray-500">{cls.time}</p>
@@ -402,7 +582,7 @@
             );
 
             const AdminMembers = () => (
-                <div className="p-8 space-y-6 animate-in fade-in h-full flex flex-col">
+                <div className="p-8 space-y-6 fade-in h-full flex flex-col">
                     <div className="flex justify-between items-center">
                         <div>
                             <h1 className="text-3xl font-bold text-gray-900">Members</h1>
@@ -445,10 +625,10 @@
                                             <td className="p-4 text-sm text-gray-600">{member.expiry}</td>
                                             <td className="p-4 text-sm text-gray-600">{member.visits}</td>
                                             <td className="p-4">
-                                                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold
-                                                    ${member.status === 'Active' ? 'bg-green-100 text-green-700' : 
-                                                    member.status === 'Expiring Soon' ? 'bg-yellow-100 text-yellow-700' : 
-                                                    'bg-red-100 text-red-700'}`}>
+                                                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border
+                                                    ${member.status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' : 
+                                                    member.status === 'Expiring Soon' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 
+                                                    'bg-red-50 text-red-700 border-red-200'}`}>
                                                     {member.status}
                                                 </span>
                                             </td>
@@ -465,61 +645,69 @@
             return (
                 <div className="min-h-screen font-sans flex flex-col items-center justify-center p-0 sm:p-4 md:p-8">
                     
-                    {/* View Switcher Controls */}
+                    {/* View Switcher Controls (For Demo purposes) */}
                     <div className="fixed top-4 right-4 z-50 bg-white p-1 rounded-xl shadow-lg flex gap-1 border border-gray-200">
                         <button 
                             onClick={() => { setViewRole('user'); setActiveTab('home'); }}
                             className={`px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 ${viewRole === 'user' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
                         >
-                            <i className="fas fa-user"></i> User App
+                            <i className="fas fa-mobile-alt"></i> User App
                         </button>
                         <button 
                             onClick={() => { setViewRole('admin'); setActiveTab('admin-home'); }}
                             className={`px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 ${viewRole === 'admin' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
                         >
-                            <i className="fas fa-shield-alt"></i> Admin Panel
+                            <i className="fas fa-desktop"></i> Admin Panel
                         </button>
                     </div>
 
                     {/* --- USER MOBILE VIEW --- */}
                     {viewRole === 'user' && (
                         <div className="w-full h-screen sm:h-[850px] max-w-[400px] bg-white sm:rounded-[3rem] shadow-2xl relative overflow-hidden flex flex-col sm:border-[8px] border-gray-900">
-                            <div className="flex-1 overflow-hidden relative pt-6">
-                                {activeTab === 'home' && <UserHome />}
-                                {activeTab === 'classes' && <UserClasses />}
-                                {activeTab === 'ai' && <UserAICoach />}
-                                {activeTab === 'qr' && <UserQR />}
-                            </div>
+                            
+                            {!isAuthenticated ? (
+                                <LoginScreen />
+                            ) : (
+                                <>
+                                    <div className="flex-1 overflow-hidden relative pt-6">
+                                        {activeTab === 'home' && <UserHome />}
+                                        {activeTab === 'classes' && <UserClasses />}
+                                        {activeTab === 'ai' && <UserAICoach />}
+                                        {activeTab === 'qr' && <UserQR />}
+                                    </div>
 
-                            {/* Mobile Bottom Nav */}
-                            <div className="absolute bottom-0 w-full bg-white border-t border-gray-100 px-6 py-4 flex justify-between items-center z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-                                {[
-                                    { id: 'home', icon: 'fa-home', label: 'Home' },
-                                    { id: 'classes', icon: 'fa-calendar', label: 'Classes' },
-                                    { id: 'qr', icon: 'fa-qrcode', label: 'Access', special: true },
-                                    { id: 'ai', icon: 'fa-bolt', label: 'Coach' },
-                                    { id: 'profile', icon: 'fa-user', label: 'Profile' },
-                                ].map((tab) => (
-                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className="flex flex-col items-center gap-1 relative">
-                                        {tab.special ? (
-                                            <div className="-mt-8 h-14 w-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-200 border-4 border-white transition hover:scale-105">
-                                                <i className={`fas ${tab.icon} text-xl`}></i>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <i className={`fas ${tab.icon} text-xl ${activeTab === tab.id ? 'text-indigo-600' : 'text-gray-400'} transition-colors duration-300`}></i>
-                                                {activeTab === tab.id && <span className="absolute -bottom-3 w-1 h-1 bg-indigo-600 rounded-full"></span>}
-                                            </>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
+                                    {/* Mobile Bottom Nav */}
+                                    <div className="absolute bottom-0 w-full bg-white border-t border-gray-100 px-6 py-4 flex justify-between items-center z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+                                        {[
+                                            { id: 'home', icon: 'fa-home', label: 'Home' },
+                                            { id: 'classes', icon: 'fa-calendar', label: 'Classes' },
+                                            { id: 'qr', icon: 'fa-qrcode', label: 'Access', special: true },
+                                            { id: 'ai', icon: 'fa-bolt', label: 'Coach' },
+                                            { id: 'profile', icon: 'fa-user', label: 'Profile' },
+                                        ].map((tab) => (
+                                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className="flex flex-col items-center gap-1 relative">
+                                                {tab.special ? (
+                                                    <div className="-mt-8 h-14 w-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-200 border-4 border-white transition hover:scale-105">
+                                                        <i className={`fas ${tab.icon} text-xl`}></i>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <i className={`fas ${tab.icon} text-xl ${activeTab === tab.id ? 'text-indigo-600' : 'text-gray-400'} transition-colors duration-300`}></i>
+                                                        {activeTab === tab.id && <span className="absolute -bottom-3 w-1 h-1 bg-indigo-600 rounded-full"></span>}
+                                                    </>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                            {showPaymentModal && <PaymentModal />}
                         </div>
                     )}
 
                     {/* --- ADMIN WEB VIEW --- */}
                     {viewRole === 'admin' && (
-                        <div className="w-full max-w-[1400px] h-[90vh] bg-gray-50 rounded-2xl shadow-2xl flex overflow-hidden border border-gray-200">
+                        <div className="w-full max-w-[1400px] h-[90vh] bg-gray-50 rounded-2xl shadow-2xl flex overflow-hidden border border-gray-200 fade-in">
                             {/* Sidebar */}
                             <div className="w-64 bg-gray-900 text-white flex flex-col hidden md:flex">
                                 <div className="p-6 flex items-center gap-3 border-b border-gray-800">
